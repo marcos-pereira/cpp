@@ -18,15 +18,10 @@ This file is part of DQ Robotics.
     along with DQ Robotics.  If not, see <http://www.gnu.org/licenses/>.
 
 Contributors:
-- Murilo M. Marinho (murilo@nml.t.u-tokyo.ac.jp)
+- Murilo M. Marinho (murilomarinho@ieee.org)
 */
 
-#ifdef _WIN32
 #include <Eigen/Dense>
-#else
-#include <eigen3/Eigen/Dense>
-#endif
-
 #include <tuple>
 
 using namespace Eigen;

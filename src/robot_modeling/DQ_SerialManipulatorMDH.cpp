@@ -1,5 +1,5 @@
 /**
-(C) Copyright 2022 DQ Robotics Developers
+(C) Copyright 2011-2025 DQ Robotics Developers
 
 This file is part of DQ Robotics.
 
@@ -17,8 +17,12 @@ This file is part of DQ Robotics.
     along with DQ Robotics.  If not, see <http://www.gnu.org/licenses/>.
 
 Contributors:
-- Murilo M. Marinho (murilo@nml.t.u-tokyo.ac.jp)
-- Juan Jose Quiroz Omana -  juanjqo@g.ecc.u-tokyo.ac.jp
+1. Murilo M. Marinho (murilomarinho@ieee.org)
+    - Responsible for the original implementation.
+
+2. Juan Jose Quiroz Omana (juanjose.quirozomana@manchester.ac.uk)
+    - Added methods to get and set the DH parameters.
+    - Added the get_supported_joint_types() method.
 */
 
 #include <dqrobotics/robot_modeling/DQ_SerialManipulatorMDH.h>
@@ -54,6 +58,7 @@ DQ_SerialManipulatorMDH::DQ_SerialManipulatorMDH(const MatrixXd& mdh_matrix):
         throw(std::range_error("Bad DQ_SerialManipulatorDH(mdh_matrix) call: mdh_matrix should be 5xn"));
     }
     mdh_matrix_ = mdh_matrix;
+    set_joint_types(mdh_matrix.row(4));
 }
 
 /**
@@ -109,6 +114,112 @@ DQ DQ_SerialManipulatorMDH::_mdh2dq(const double &q, const int &ith) const
                  - (a*sine_of_half_alpha*sine_of_half_theta  )/2.0
                 );
 }
+
+/**
+ * @brief DQ_SerialManipulatorMDH::get_parameters returns a vector containing the MDH parameters.
+ * @param parameter_type Parameter type, which which corresponds to THETA, D, A, or ALPHA.
+ * @return A vector containing the desired MDH parameters.
+ */
+VectorXd DQ_SerialManipulatorMDH::get_parameters(const DQ_ParameterDH &parameter_type) const
+{
+    switch (parameter_type) {
+    case DQ_ParameterDH::THETA:
+        return  mdh_matrix_.row(0);
+    case DQ_ParameterDH::D:
+        return  mdh_matrix_.row(1);
+    case DQ_ParameterDH::A:
+        return  mdh_matrix_.row(2);
+    case DQ_ParameterDH::ALPHA:
+        return  mdh_matrix_.row(3);
+    default:
+        throw std::runtime_error("Wrong type of parameter");
+    }
+}
+
+/**
+ * @brief DQ_SerialManipulatorMDH::get_parameter returns the MDH parameter of the ith joint.
+ * @param parameter_type Parameter type, which which corresponds to THETA, D, A, or ALPHA.
+ * @param to_ith_link The joint number.
+ * @return The desired MDH parameter.
+ */
+double DQ_SerialManipulatorMDH::get_parameter(const DQ_ParameterDH &parameter_type,
+                                             const int &to_ith_link) const
+{
+    _check_to_ith_link(to_ith_link);
+    switch (parameter_type) {
+    case DQ_ParameterDH::THETA:
+        return  mdh_matrix_(0, to_ith_link);
+    case DQ_ParameterDH::D:
+        return  mdh_matrix_(1, to_ith_link);
+    case DQ_ParameterDH::A:
+        return  mdh_matrix_(2, to_ith_link);
+    case DQ_ParameterDH::ALPHA:
+        return  mdh_matrix_(3, to_ith_link);
+    default:
+        throw std::runtime_error("Wrong type of parameter");
+    }
+}
+
+/**
+ * @brief DQ_SerialManipulatorMDH::set_parameters sets the MDH parameters.
+ * @param parameter_type Parameter type, which which corresponds to THETA, D, A, or ALPHA.
+ * @param vector_parameters A vector containing the new parameters.
+ */
+void DQ_SerialManipulatorMDH::set_parameters(const DQ_ParameterDH &parameter_type,
+                                            const VectorXd &vector_parameters)
+{
+    _check_q_vec(vector_parameters);
+    switch (parameter_type) {
+    case DQ_ParameterDH::THETA:
+        mdh_matrix_.row(0) = vector_parameters;
+        break;
+    case DQ_ParameterDH::D:
+        mdh_matrix_.row(1) =  vector_parameters;
+        break;
+    case DQ_ParameterDH::A:
+        mdh_matrix_.row(2) =  vector_parameters;
+        break;
+    case DQ_ParameterDH::ALPHA:
+        mdh_matrix_.row(3) =  vector_parameters;
+        break;
+    }
+}
+
+/**
+ * @brief DQ_SerialManipulatorMDH::set_parameter sets the MDH parameter of the ith joint.
+ * @param parameter_type Parameter type, which which corresponds to THETA, D, A, or ALPHA.
+ * @param to_ith_link The joint number.
+ * @param parameter The new parameter.
+ */
+void DQ_SerialManipulatorMDH::set_parameter(const DQ_ParameterDH &parameter_type,
+                                           const int &to_ith_link, const double &parameter)
+{
+    _check_to_ith_link(to_ith_link);
+    switch (parameter_type) {
+    case DQ_ParameterDH::THETA:
+        mdh_matrix_(0, to_ith_link) = parameter;
+        break;
+    case DQ_ParameterDH::D:
+        mdh_matrix_(1, to_ith_link) = parameter;
+        break;
+    case DQ_ParameterDH::A:
+        mdh_matrix_(2, to_ith_link) = parameter;
+        break;
+    case DQ_ParameterDH::ALPHA:
+        mdh_matrix_(3, to_ith_link) = parameter;
+        break;
+    }
+}
+
+/**
+ * @brief DQ_SerialManipulatorMDH::get_supported_joint_types gets the supported joint types.
+ * @return A vector containing the supported joint types.
+ */
+std::vector<DQ_JointType> DQ_SerialManipulatorMDH::get_supported_joint_types() const
+{
+    return {DQ_JointType::REVOLUTE, DQ_JointType::PRISMATIC};
+}
+
 
 /**
  * @brief This protected method computes the dual quaternion related with the time derivative of the
