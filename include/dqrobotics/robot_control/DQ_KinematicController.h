@@ -34,6 +34,7 @@ enum ControlObjective
     None,
     Distance,
     DistanceToPlane,
+    DistanceToLine,
     Line,
     Plane,
     Pose,
