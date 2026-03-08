@@ -114,6 +114,17 @@ MatrixXd DQ_KinematicController::get_jacobian(const VectorXd &q) const
     case ControlObjective::Distance:
         return DQ_Kinematics::distance_jacobian(J_pose,x_pose);
 
+    case ControlObjective::DistanceToLine:
+    {
+        if(!is_line(target_primitive_))
+        {
+            throw std::runtime_error("Please set the target line with the method set_target_primitive()");
+        }
+        MatrixXd Jt = robot_local->translation_jacobian(J_pose, x_pose);
+        DQ t = translation(x_pose);
+        return robot_local->point_to_line_distance_jacobian(Jt, t, target_primitive_);
+    }
+
     case ControlObjective::DistanceToPlane:
     {
         if(!is_plane(target_primitive_))
@@ -163,6 +174,18 @@ VectorXd DQ_KinematicController::get_task_variable(const VectorXd &q) const
     {
         VectorXd p = vec4(translation(x_pose));
         return p.transpose()*p;
+    }
+
+    case ControlObjective::DistanceToLine:
+    {
+        if(!is_line(target_primitive_))
+        {
+            throw std::runtime_error("Set the target line with the method set_target_primitive()");
+        }
+        DQ t = translation(x_pose);
+        VectorXd distance(1);
+        distance(0)=DQ_Geometry::point_to_line_squared_distance(t, target_primitive_);
+        return distance;
     }
 
     case ControlObjective::DistanceToPlane:
@@ -221,6 +244,9 @@ void DQ_KinematicController::set_control_objective(const ControlObjective &contr
     switch(control_objective)
     {
     case ControlObjective::Distance: //This was intentional https://en.cppreference.com/w/cpp/language/attributes/fallthrough
+    case ControlObjective::DistanceToLine: 
+        last_error_signal_ = VectorXd::Zero(1);
+        break;
     case ControlObjective::DistanceToPlane:
         last_error_signal_ = VectorXd::Zero(1);
         break;
